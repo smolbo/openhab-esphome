@@ -179,7 +179,9 @@ public abstract class AbstractMessageHandler<S extends GeneratedMessageV3, T ext
             logger.trace("Registering channel: {}", Debug.channelToString(channel));
             logger.trace("Channel type:        {}", Debug.channelTypeToString(channelType));
         }
-        handler.addChannelType(channelType);
+        if(channelType.getUID().getBindingId().equals(BindingConstants.BINDING_ID)) {
+            handler.addChannelType(channelType);
+        }
         handler.addChannel(channel);
     }
 

@@ -1,8 +1,10 @@
 package no.seime.openhab.binding.esphome.internal.message;
 
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import no.seime.openhab.binding.esphome.internal.message.light.ColorCapability;
 import org.openhab.core.config.core.Configuration;
 import org.openhab.core.thing.Channel;
 import org.openhab.core.thing.ChannelUID;
@@ -38,6 +40,8 @@ public class LightMessageHandler extends AbstractMessageHandler<ListEntitiesLigh
     public void buildChannels(ListEntitiesLightResponse rsp) {
         Configuration configuration = configuration(rsp.getKey(), null, "Light");
 
+//        rsp.getSupportedColorModesList()
+
         ChannelType channelType = addChannelType(rsp.getUniqueId(), rsp.getName(), "Color", Collections.emptySet(),
                 null, Set.of("Light"), false, "light", null, null, null);
 
@@ -56,4 +60,5 @@ public class LightMessageHandler extends AbstractMessageHandler<ListEntitiesLigh
         // findChannelByKey(rsp.getKey()).ifPresent(
         // channel -> handler.updateState(channel.getUID(), HSBType.fromRGB(rsp.getRed(),rsp.getGreen(),rsp.getBlue()));
     }
+
 }

@@ -6,32 +6,34 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.core.thing.UID;
 import org.openhab.core.thing.type.*;
 
+import javax.validation.constraints.NotNull;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ChannelUtils {
-    public static ChannelTypeUID extendSystemChanelTypeUid(ChannelTypeUID base, String extendType, String... subtypes) {
-        return new ChannelTypeUID(base.getId()
+    public static ChannelTypeUID extendSystemChanelTypeUid(ChannelTypeUID base, String extendType, @Nullable String ... subtypes) {
+        var subtypesStr = subtypes != null ? Stream.of(subtypes).collect(Collectors.joining(UID.SEPARATOR, UID.SEPARATOR, "")) : "";
+        return new ChannelTypeUID(BindingConstants.BINDING_ID,
+                base.getId()
                 + UID.SEPARATOR + extendType
-                + Stream.of(subtypes).collect(Collectors.joining(UID.SEPARATOR, UID.SEPARATOR, "")));
+                + subtypesStr);
     }
 
-    public static StateChannelTypeBuilder extendSystemStateChannelType(ChannelType base, LightChannelFactory.LightChannelType type, @Nullable String... subtypes) {
+    public static StateChannelTypeBuilder extendSystemStateChannelType(ChannelType base, LightChannelDef type, @Nullable String... subtypes) {
         var channelName = type.name().toLowerCase();
 
-        return ChannelTypeBuilder.state(
+        return defaultStateChannelBuilder(
                         extendSystemChanelTypeUid(base.getUID(), channelName, subtypes),
                         base.getLabel() + ", " + channelName,
                         Strings.nullToEmpty(base.getItemType())
                 )
-                .withAutoUpdatePolicy(AutoUpdatePolicy.VETO)
                 .withTags(base.getTags())
                 .withCategory(Strings.nullToEmpty(base.getCategory()))
                 .withDescription(Strings.nullToEmpty(base.getDescription()) + ", " + channelName)
                 .withCommandDescription(base.getCommandDescription());
     }
 
-    public static ChannelTypeUID createStaticChannelTypeId(String moduleName, LightChannelFactory.LightChannelType type, @Nullable String subtype) {
+    public static ChannelTypeUID createStaticChannelTypeId(String moduleName, LightChannelDef type, @Nullable String subtype) {
         var typenameSb = new StringBuilder(BindingConstants.BINDING_ID)
                 .append(UID.SEPARATOR)
                 .append(moduleName)
@@ -45,4 +47,9 @@ public class ChannelUtils {
         return new ChannelTypeUID(typenameSb.toString());
     }
 
+    public static StateChannelTypeBuilder defaultStateChannelBuilder(ChannelTypeUID typeUid, @NotNull String channelName, @NotNull String itemType) {
+        return ChannelTypeBuilder.state(typeUid, channelName, itemType)
+                .withAutoUpdatePolicy(AutoUpdatePolicy.VETO);
+
+    }
 }

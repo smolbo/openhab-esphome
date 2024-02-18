@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import no.seime.openhab.binding.esphome.internal.message.light.LightFactory;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -145,8 +146,12 @@ public class ESPHomeHandler extends BaseThingHandler implements PacketListener {
                 ClimateStateResponse.class);
         registerMessageHandler("Number", new NumberMessageHandler(this), ListEntitiesNumberResponse.class,
                 NumberStateResponse.class);
-        registerMessageHandler("Light", new LightMessageHandler(this), ListEntitiesLightResponse.class,
-                LightStateResponse.class);
+        registerMessageHandler(
+                "Light",
+                new LightMessageHandler(this, new LightFactory(dynamicChannelTypeProvider)),
+                ListEntitiesLightResponse.class,
+                LightStateResponse.class
+        );
         registerMessageHandler("Button", new ButtonMessageHandler(this), ListEntitiesButtonResponse.class,
                 ButtonCommandRequest.class);
     }

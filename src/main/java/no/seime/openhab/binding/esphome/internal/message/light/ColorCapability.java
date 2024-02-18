@@ -1,36 +1,37 @@
 package no.seime.openhab.binding.esphome.internal.message.light;
 
-import no.seime.openhab.binding.esphome.internal.message.LightMessageHandler;
-
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public enum ColorCapability {
-    ON_OFF(1),
-    BRIGHTNESS(1 << 1),
-    WHITE(1 << 2),
-    COLOR_TEMPERATURE(1 << 3),
-    COLD_WARM_WHITE(1 << 4),
-    RGB(1 << 5);
+    ON_OFF(1, LightChannelDef.ON_OFF),
+    BRIGHTNESS(1 << 1, LightChannelDef.MASTER_BRIGHTNESS),
+    WHITE(1 << 2, LightChannelDef.WHITE),
+    COLOR_TEMPERATURE(1 << 3, LightChannelDef.COLOR_TEMPERATURE),
+    COLD_WARM_WHITE(1 << 4,
+            LightChannelDef.COLD_WHITE,
+            LightChannelDef.WARM_WHITE
+    ),
+    RGB(1 << 5,
+            LightChannelDef.COLOR_BRIGHTNESS,
+            LightChannelDef.RED,
+            LightChannelDef.GREEN,
+            LightChannelDef.BLUE
+    );
     private final int colorCapabilityBitMask;
+    private final Set<LightChannelDef> channels;
 
-    ColorCapability(int bitMask) {
+    ColorCapability(int bitMask, LightChannelDef... capabilityChannels) {
         this.colorCapabilityBitMask = bitMask;
+        this.channels = Stream.of(capabilityChannels).collect(Collectors.toUnmodifiableSet());
     }
 
     public int getBitMask() {
         return colorCapabilityBitMask;
     }
 
-    public static SortedSet<ColorCapability> decodeToCapabilities(int bitMask) {
-        TreeSet<ColorCapability> caps = new TreeSet<>(Comparator.comparing(ColorCapability::getBitMask));
-        for (ColorCapability cap : values()) {
-            if ((cap.getBitMask() & bitMask) != 0) {
-                caps.add(cap);
-            }
-        }
-        return Collections.unmodifiableSortedSet(caps);
+    public Set<LightChannelDef> getChannels() {
+        return channels;
     }
 }

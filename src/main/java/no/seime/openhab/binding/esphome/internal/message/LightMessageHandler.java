@@ -1,16 +1,13 @@
 package no.seime.openhab.binding.esphome.internal.message;
 
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.concurrent.ConcurrentHashMap;
 
-import no.seime.openhab.binding.esphome.internal.message.light.ColorCapability;
-import org.openhab.core.config.core.Configuration;
+import io.esphome.api.LightCommandRequest;
+import no.seime.openhab.binding.esphome.internal.message.light.Light;
+import no.seime.openhab.binding.esphome.internal.message.light.LightChannel;
+import no.seime.openhab.binding.esphome.internal.message.light.LightFactory;
 import org.openhab.core.thing.Channel;
-import org.openhab.core.thing.ChannelUID;
-import org.openhab.core.thing.binding.builder.ChannelBuilder;
-import org.openhab.core.thing.type.ChannelKind;
-import org.openhab.core.thing.type.ChannelType;
 import org.openhab.core.types.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +19,13 @@ import no.seime.openhab.binding.esphome.internal.handler.ESPHomeHandler;
 
 public class LightMessageHandler extends AbstractMessageHandler<ListEntitiesLightResponse, LightStateResponse> {
 
-    private final Logger logger = LoggerFactory.getLogger(LightMessageHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(LightMessageHandler.class);
+    private final LightFactory lightFactory;
+    private final Map<Integer, Light> lightsByKey = new ConcurrentHashMap<>();
 
-    public LightMessageHandler(ESPHomeHandler handler) {
+    public LightMessageHandler(ESPHomeHandler handler, LightFactory lightFactory) {
         super(handler);
+        this.lightFactory = lightFactory;
     }
 
     @Override
@@ -35,30 +35,55 @@ public class LightMessageHandler extends AbstractMessageHandler<ListEntitiesLigh
                 "Unhandled command {} for channel {} - in fact the Light component isn't really implemented yet. Contribution needed",
                 command, channel);
         // handler.sendMessage(LightCommandRequest.newBuilder().setKey(key).setState().build());
+
+        getLight(key).ifPresent(
+                light -> light.handleCommand(channel, command, this::sendMessage)
+        );
+    }
+
+    private void sendMessage(LightCommandRequest req) {
+        try {
+            logger.debug("esphome:light: Sending message {}", req);
+            handler.sendMessage(req);
+        } catch (ProtocolAPIError e) {
+            logger.error("Failed to send climate command for key {} / {}",
+                    req.getKey(),
+                    getLight(req.getKey()).map(Light::logId),
+                    e
+            );
+        }
     }
 
     public void buildChannels(ListEntitiesLightResponse rsp) {
-        Configuration configuration = configuration(rsp.getKey(), null, "Light");
 
-//        rsp.getSupportedColorModesList()
-
-        ChannelType channelType = addChannelType(rsp.getUniqueId(), rsp.getName(), "Color", Collections.emptySet(),
-                null, Set.of("Light"), false, "light", null, null, null);
-
-        Channel channel = ChannelBuilder.create(new ChannelUID(handler.getThing().getUID(), rsp.getObjectId()))
-                .withLabel(rsp.getName()).withKind(ChannelKind.STATE).withType(channelType.getUID())
-                .withAcceptedItemType("Color").withConfiguration(configuration).build();
-
-        super.registerChannel(channel, channelType);
+        var light = lightFactory.createLight(handler.getThing().getUID(), rsp);
+        lightsByKey.put(light.getKey(), light);
+        light.getAllChannels().stream()
+                .map(LightChannel::getChannel)
+                .forEach(handler::addChannel);
     }
 
     public void handleState(LightStateResponse rsp) {
         // TODO must figure out the HA light component modes and how to map them to openhab
-        logger.warn(
-                "Unhandled state for esp light {} - in fact the Light component isn't really implemented yet. Contribution needed",
-                rsp.getKey());
-        // findChannelByKey(rsp.getKey()).ifPresent(
+//        logger.warn(
+//                "Unhandled state for esp light {} - in fact the Light component isn't really implemented yet. Contribution needed",
+//                rsp.getKey());
         // channel -> handler.updateState(channel.getUID(), HSBType.fromRGB(rsp.getRed(),rsp.getGreen(),rsp.getBlue()));
+
+        getLight(rsp.getKey()).ifPresent(
+                light -> light.handleState(rsp, handler::updateState)
+        );
+    }
+
+    private Optional<Light> getLight(int lightObjectKey) {
+        var ret =  Optional.ofNullable(lightsByKey.get(lightObjectKey));
+
+        ret.ifPresentOrElse(
+                light -> logger.trace("[esphome:light] Got light: {} / {}", lightObjectKey, light.logId()),
+                () ->logger.warn("[esphome:light] light {} is unknown - not added (yet?)", lightObjectKey)
+        );
+
+        return ret;
     }
 
 }

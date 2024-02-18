@@ -1,7 +1,5 @@
 package no.seime.openhab.binding.esphome.internal.message.light;
 
-import no.seime.openhab.binding.esphome.internal.message.LightMessageHandler;
-
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -106,5 +104,13 @@ public enum ColorMode {
 
     public String description() {
         return description;
+    }
+
+    public static Optional<ColorMode> parseSafe(String str) {
+        try {
+            return Optional.of(ColorMode.valueOf(str));
+        } catch (Throwable ex) {
+            return Optional.empty();
+        }
     }
 }

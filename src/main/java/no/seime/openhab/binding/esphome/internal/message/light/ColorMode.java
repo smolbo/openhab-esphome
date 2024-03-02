@@ -8,60 +8,29 @@ public enum ColorMode {
     /// No color mode configured (cannot be a supported mode, only active when light is off).
     UNKNOWN("Unknown mode"),
     /// Only on/off control.
-    ON_OFF("On/Off",
-            ColorCapability.ON_OFF
-    ),
+    ON_OFF("On/Off", ColorCapability.ON_OFF),
     /// Dimmable light.
-    BRIGHTNESS("On/Off and brightness controls",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS
-    ),
+    BRIGHTNESS("On/Off and brightness controls", ColorCapability.ON_OFF, ColorCapability.BRIGHTNESS),
     /// White output only (use only if the light also has another color mode such as RGB).
-    WHITE("White light with on/off and brightness control",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS,
-            ColorCapability.WHITE
-    ),
+    WHITE("White light with on/off and brightness control", ColorCapability.ON_OFF, ColorCapability.BRIGHTNESS,
+            ColorCapability.WHITE),
     /// Controllable color temperature output.
-    COLOR_TEMPERATURE("Color temperature controlled",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS,
-            ColorCapability.COLOR_TEMPERATURE
-    ),
+    COLOR_TEMPERATURE("Color temperature controlled", ColorCapability.ON_OFF, ColorCapability.BRIGHTNESS,
+            ColorCapability.COLOR_TEMPERATURE),
     /// Cold and warm white output with individually controllable brightness.
-    COLD_WARM_WHITE("Cold/Warm white channels light",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS,
-            ColorCapability.COLD_WARM_WHITE
-    ),
+    COLD_WARM_WHITE("Cold/Warm white channels light", ColorCapability.ON_OFF, ColorCapability.BRIGHTNESS,
+            ColorCapability.COLD_WARM_WHITE),
     /// RGB color output.
-    RGB("RGB channels light",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS,
-            ColorCapability.RGB
-    ),
+    RGB("RGB channels light", ColorCapability.ON_OFF, ColorCapability.BRIGHTNESS, ColorCapability.RGB),
     /// RGB color output and a separate white output.
-    RGB_WHITE("RGB + White channels light",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS,
-            ColorCapability.RGB,
-            ColorCapability.WHITE
-    ),
+    RGB_WHITE("RGB + White channels light", ColorCapability.ON_OFF, ColorCapability.BRIGHTNESS, ColorCapability.RGB,
+            ColorCapability.WHITE),
     /// RGB color output and a separate white output with controllable color temperature.
-    RGB_COLOR_TEMPERATURE("RGB + Color temperature channels light",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS,
-            ColorCapability.RGB,
-            ColorCapability.WHITE,
-            ColorCapability.COLOR_TEMPERATURE
-    ),
+    RGB_COLOR_TEMPERATURE("RGB + Color temperature channels light", ColorCapability.ON_OFF, ColorCapability.BRIGHTNESS,
+            ColorCapability.RGB, ColorCapability.WHITE, ColorCapability.COLOR_TEMPERATURE),
     /// RGB color output, and separate cold and warm white outputs.
-    RGB_COLD_WARM_WHITE("RGB + Cold white + Warm white channels light",
-            ColorCapability.ON_OFF,
-            ColorCapability.BRIGHTNESS,
-            ColorCapability.RGB,
-            ColorCapability.COLD_WARM_WHITE
-    );
+    RGB_COLD_WARM_WHITE("RGB + Cold white + Warm white channels light", ColorCapability.ON_OFF,
+            ColorCapability.BRIGHTNESS, ColorCapability.RGB, ColorCapability.COLD_WARM_WHITE);
 
     private final String description;
     private final int modeBitMask;
@@ -70,12 +39,9 @@ public enum ColorMode {
     private final static Map<Integer, ColorMode> maskToModeMap;
 
     static {
-        maskToModeMap = Stream.of(values()).collect(Collectors.toUnmodifiableMap(
-                mode -> mode.modeBitMask,
-                mode -> mode
-        ));
+        maskToModeMap = Stream.of(values())
+                .collect(Collectors.toUnmodifiableMap(mode -> mode.modeBitMask, mode -> mode));
     }
-
 
     ColorMode(String description, ColorCapability... capabilities) {
         int resultMask = 0;

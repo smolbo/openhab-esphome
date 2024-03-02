@@ -82,7 +82,7 @@ class ESPHomeHandlerTest {
         deviceHandler.initialize();
 
         await().until(() -> deviceHandler.isInterrogated());
-        assertEquals(18, deviceHandler.getDynamicChannels().size());
+        assertEquals(24, deviceHandler.getDynamicChannels().size());
     }
 
     private ThingImpl createThing() {

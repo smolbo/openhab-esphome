@@ -23,7 +23,8 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import no.seime.openhab.binding.esphome.internal.message.light.LightFactory;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import org.eclipse.jdt.annotation.NonNull;
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -92,6 +93,7 @@ import no.seime.openhab.binding.esphome.internal.message.SelectMessageHandler;
 import no.seime.openhab.binding.esphome.internal.message.SensorMessageHandler;
 import no.seime.openhab.binding.esphome.internal.message.SwitchMessageHandler;
 import no.seime.openhab.binding.esphome.internal.message.TextSensorMessageHandler;
+import no.seime.openhab.binding.esphome.internal.message.light.LightFactory;
 
 /**
  * The {@link ESPHomeHandler} is responsible for handling commands, which are
@@ -146,12 +148,8 @@ public class ESPHomeHandler extends BaseThingHandler implements PacketListener {
                 ClimateStateResponse.class);
         registerMessageHandler("Number", new NumberMessageHandler(this), ListEntitiesNumberResponse.class,
                 NumberStateResponse.class);
-        registerMessageHandler(
-                "Light",
-                new LightMessageHandler(this, new LightFactory(dynamicChannelTypeProvider)),
-                ListEntitiesLightResponse.class,
-                LightStateResponse.class
-        );
+        registerMessageHandler("Light", new LightMessageHandler(this, new LightFactory(dynamicChannelTypeProvider)),
+                ListEntitiesLightResponse.class, LightStateResponse.class);
         registerMessageHandler("Button", new ButtonMessageHandler(this), ListEntitiesButtonResponse.class,
                 ButtonCommandRequest.class);
     }
@@ -325,6 +323,7 @@ public class ESPHomeHandler extends BaseThingHandler implements PacketListener {
             props.put("compilation_time", rsp.getCompilationTime());
             updateThing(editThing().withProperties(props).build());
         } else if (message instanceof ListEntitiesDoneResponse) {
+            logger.debug("Channels: {}", new GsonBuilder().setPrettyPrinting().create().toJson(dynamicChannels));
             updateThing(editThing().withChannels(dynamicChannels).build());
             logger.debug("[{}] Device interrogation complete, done updating thing channels", config.hostname);
             interrogated = true;

@@ -1,8 +1,11 @@
 package no.seime.openhab.binding.esphome.internal.message.light;
 
-import io.esphome.api.LightCommandRequest;
-import io.esphome.api.LightStateResponse;
-import io.esphome.api.ListEntitiesLightResponse;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
 import org.openhab.core.library.types.DecimalType;
 import org.openhab.core.library.types.StringType;
 import org.openhab.core.thing.Channel;
@@ -13,12 +16,9 @@ import org.openhab.core.types.State;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
+import io.esphome.api.LightCommandRequest;
+import io.esphome.api.LightStateResponse;
+import io.esphome.api.ListEntitiesLightResponse;
 
 public class Light {
 
@@ -42,19 +42,11 @@ public class Light {
         allChannelsById = channels.stream().collect(Collectors.toUnmodifiableMap(LightChannel::getUID, ch -> ch));
         channelsByType = channels.stream().collect(Collectors.toUnmodifiableMap(LightChannel::getType, ch -> ch));
 
-        channelsByMode = rsp.getSupportedColorModesList().stream()
-                .map(ColorMode::decodeFromBitMask)
-                .map(mode ->
-                        new ColorModeChannels(mode,
-                                channels.stream()
-                                        .filter(ch -> ch.isEnabled(mode))
-                                        .collect(Collectors.toList())
-                        )
+        channelsByMode = rsp.getSupportedColorModesList().stream().map(ColorMode::decodeFromBitMask)
+                .map(mode -> new ColorModeChannels(mode,
+                        channels.stream().filter(ch -> ch.isEnabled(mode)).collect(Collectors.toList()))
 
-                ).collect(Collectors.toUnmodifiableMap(
-                        ColorModeChannels::getMode,
-                        cmChannels -> cmChannels
-                ));
+                ).collect(Collectors.toUnmodifiableMap(ColorModeChannels::getMode, cmChannels -> cmChannels));
     }
 
     public String getObjectId() {
@@ -84,12 +76,9 @@ public class Light {
     public void handleState(LightStateResponse rsp, BiConsumer<ChannelUID, State> stateUpdater) {
         var newMode = ColorMode.decodeFromBitMask(rsp.getColorMode());
         var modeString = new StringType(newMode.name());
-        Optional.ofNullable(channelsByType.get(LightChannelDef.COLOR_MODE)).ifPresentOrElse(
-                lightChannel -> {
-                    stateUpdater.accept(lightChannel.getUID(), modeString);
-                },
-                () -> log.error("[esphome:light {} ]: channel {} not found", logId(), LightChannelDef.COLOR_MODE)
-        );
+        Optional.ofNullable(channelsByType.get(LightChannelDef.COLOR_MODE)).ifPresentOrElse(lightChannel -> {
+            stateUpdater.accept(lightChannel.getUID(), modeString);
+        }, () -> log.error("[esphome:light {} ]: channel {} not found", logId(), LightChannelDef.COLOR_MODE));
 
         handleChannelState(stateUpdater, LightChannelDef.COLOR_TEMPERATURE, rsp.getColorTemperature());
 
@@ -109,8 +98,7 @@ public class Light {
     private void handleChannelState(BiConsumer<ChannelUID, State> stateUpdater, LightChannelDef type, float state) {
         Optional.ofNullable(channelsByType.get(type)).ifPresentOrElse(
                 ch -> stateUpdater.accept(ch.getUID(), new DecimalType(BigDecimal.valueOf(state))),
-                () -> log.error("{}: no channel found for type {}", logId(), type)
-        );
+                () -> log.error("{}: no channel found for type {}", logId(), type));
     }
 
     public String logId() {
@@ -118,23 +106,19 @@ public class Light {
     }
 
     public void handleCommand(Channel channel, Command command, Consumer<LightCommandRequest> sender) {
-        getChannelByUid(channel.getUID()).ifPresent(
-                lightChannel -> {
-                    var commandBuilder = LightCommandRequest.newBuilder()
-                            .setKey(this.key);
-                    lightChannel.handleCommand(commandBuilder, command);
-                    sender.accept(commandBuilder.build());
-                }
-        );
-
+        getChannelByUid(channel.getUID()).ifPresent(lightChannel -> {
+            var commandBuilder = LightCommandRequest.newBuilder().setKey(this.key);
+            lightChannel.handleCommand(commandBuilder, command);
+            sender.accept(commandBuilder.build());
+        });
     }
 
-    private static class ColorModeChannels {
+    public static class ColorModeChannels {
         private final ColorMode mode;
         private final Map<ChannelUID, LightChannel> channelsByUid;
         private final Map<LightChannelDef, LightChannel> channelsByType;
 
-        public ColorModeChannels(ColorMode mode, Collection<LightChannel> channels) {
+        private ColorModeChannels(ColorMode mode, Collection<LightChannel> channels) {
             this.mode = mode;
             channelsByUid = channels.stream().collect(Collectors.toUnmodifiableMap(LightChannel::getUID, ch -> ch));
             channelsByType = channels.stream().collect(Collectors.toUnmodifiableMap(LightChannel::getType, ch -> ch));
@@ -161,21 +145,15 @@ public class Light {
             this.rsp = rsp;
         }
 
-        public LightChannel.Builder addChannel(LightChannelDef espType) {
-            return getChannelBuilder(espType);
-        }
-
         public LightChannel.Builder getChannelBuilder(LightChannelDef espType) {
             return channelBuilders.computeIfAbsent(espType, k -> new LightChannel.Builder(rsp.getKey(), espType));
         }
 
         public Light build(ThingUID thingUID, LightChannelTypeFactory ohTypeFactory) {
-            return new Light(
-                    rsp,
-                    channelBuilders.values().stream()
-                            .map(chBuilder -> chBuilder.build(thingUID, ohTypeFactory, rsp))
-                            .collect(Collectors.toList())
-            );
+            return new Light(rsp, channelBuilders.values().stream()
+                    .map(chBuilder -> chBuilder.build(thingUID, ohTypeFactory, rsp))
+                    .flatMap(Optional::stream)
+                    .collect(Collectors.toList()));
         }
     }
 }

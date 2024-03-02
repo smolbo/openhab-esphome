@@ -9,16 +9,9 @@ public enum ColorCapability {
     BRIGHTNESS(1 << 1, LightChannelDef.MASTER_BRIGHTNESS),
     WHITE(1 << 2, LightChannelDef.WHITE),
     COLOR_TEMPERATURE(1 << 3, LightChannelDef.COLOR_TEMPERATURE),
-    COLD_WARM_WHITE(1 << 4,
-            LightChannelDef.COLD_WHITE,
-            LightChannelDef.WARM_WHITE
-    ),
-    RGB(1 << 5,
-            LightChannelDef.COLOR_BRIGHTNESS,
-            LightChannelDef.RED,
-            LightChannelDef.GREEN,
-            LightChannelDef.BLUE
-    );
+    COLD_WARM_WHITE(1 << 4, LightChannelDef.COLD_WHITE, LightChannelDef.WARM_WHITE),
+    RGB(1 << 5, LightChannelDef.COLOR_BRIGHTNESS, LightChannelDef.RED, LightChannelDef.GREEN, LightChannelDef.BLUE);
+
     private final int colorCapabilityBitMask;
     private final Set<LightChannelDef> channels;
 

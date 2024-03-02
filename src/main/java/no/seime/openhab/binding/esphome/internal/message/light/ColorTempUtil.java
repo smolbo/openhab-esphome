@@ -15,5 +15,4 @@ public class ColorTempUtil {
     public static String formatKelvin(float colorTemperature) {
         return String.format("%.0f", colorTemperature);
     }
-
 }

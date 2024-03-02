@@ -74,20 +74,22 @@ public class ESPHomeEmulator {
                             logger.debug("Connection Accepted: " + channel.getLocalAddress() + "\n");
 
                         } else if (myKey.isReadable()) {
-                            logger.debug("Data available");
+                            //logger.debug("Data available");
                             channel = (SocketChannel) myKey.channel();
 
                             ByteBuffer buffer = ByteBuffer.allocate(256);
                             int numBytes = channel.read(buffer);
                             if (numBytes > 0) {
+                                logger.debug("Data read {} bytes", numBytes);
                                 try {
                                     streamHandler.processReceivedData(buffer);
                                 } catch (ProtocolException e) {
+                                    logger.debug("Data read exception {}", e.getMessage());
                                     channel.close();
                                     streamHandler.onParseError(e);
                                 }
                             } else {
-                                logger.debug("No data");
+//                                logger.debug("No data");
                             }
 
                         }
